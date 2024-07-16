@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  ArtifactBucketName:
+    Type: String
+    Description: Nome do bucket S3 para armazenamento de artefatos do CodePipeline
+    Default: "my-artifact-bucket"
+
+  KmsKeyId:
+    Type: String
+    Description: ID da chave KMS para criptografia dos artefatos no bucket S3
+    Default: "arn:aws:kms:us-east-1:123456789012:key/my-kms-key"
+
+  PipelineRoleArn:
+    Type: String
+    Description: ARN da role do IAM para o CodePipeline
+    Default: "arn:aws:iam::123456789012:role/my-pipeline-role"
+
+  CodePipelineName:
+    Type: String
+    Description: Nome do pipeline do CodePipeline
+    Default: "automation-pipeline"
+
+  CodeCommitRepositoryName:
+    Type: String
+    Description: Nome do repositório do CodeCommit
+    Default: "my-codecommit-repo"
+
+  CodeBuildProjectName:
+    Type: String
+    Description: Nome do projeto do CodeBuild para construção do SAM
+    Default: "my-codebuild-project"
+
+  AccountToDeployId:
+    Type: String
+    Description: ID da conta para deploy
+    Default: "987654321000"
+
+Resources:
+  AutomationsPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Ref CodePipelineName
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucketName
+        EncryptionKey:
+          Id: !Ref KmsKeyId
+          Type: KMS
+      RoleArn: !Ref PipelineRoleArn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeCommit
+                Version: "1"
+              Configuration:
+                RepositoryName: !Ref CodeCommitRepositoryName
+                BranchName: main
+              OutputArtifacts:
+                - Name: SourceCode
+              RunOrder: 1
+
+        - Name: AutomationsSAM
+          Actions:
+            - Name: SAMCode
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref CodeBuildProjectName
+                EnvironmentVariables: |
+                  [
+                    {
+                      "name": "ACCOUNT_TO_DEPLOY_ID",
+                      "value": !Ref AccountToDeployId
+                    },
+                    {
+                      "name": "SAM_PROJECT_NAME",
+                      "value": !Ref CodePipelineName
+                    },
+                    {
+                      "name": "WORK_DIR",
+                      "value": "./"
+                    }
+                  ]
+              RunOrder: 1
+              InputArtifacts:
+                - Name: SourceCode

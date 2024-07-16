@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  RepositoryName:
+    Description: "O nome do repositório CodeCommit"
+    Type: String
+    Default: "meu-repo-padrao"
+
+  RegionTag:
+    Description: "A tag de região para o repositório"
+    Type: String
+    Default: "us-west-2"
+
+  EnvironmentTag:
+    Description: "A tag de ambiente para o repositório"
+    Type: String
+    Default: "producao"
+
+  PlatformTag:
+    Description: "A tag de plataforma para o repositório"
+    Type: String
+    Default: "AplicacaoWeb"
+
+  FunctionTag:
+    Description: "A tag de função para o repositório"
+    Type: String
+    Default: "backend"
+
+  TeamTag:
+    Description: "A tag de equipe para o repositório"
+    Type: String
+    Default: "devops"
+
+Resources:
+  Repository:
+    Type: AWS::CodeCommit::Repository
+    Properties: 
+      RepositoryName: 
+        Ref: RepositoryName
+      Tags:
+        - Key: regiao
+          Value: 
+            Ref: RegionTag
+        - Key: ambiente
+          Value: 
+            Ref: EnvironmentTag
+        - Key: plataforma
+          Value: 
+            Ref: PlatformTag
+        - Key: funcao
+          Value: 
+            Ref: FunctionTag
+        - Key: equipe
+          Value: 
+            Ref: TeamTag

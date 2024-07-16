@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+# Parâmetros para permitir a personalização do template
+Parameters:
+  TableName:
+    Description: "O nome da tabela DynamoDB"
+    Type: String
+    Default: "default_table_name"
+
+  BillingMode:
+    Description: "O modo de faturamento para a tabela DynamoDB"
+    Type: String
+    Default: "PAY_PER_REQUEST"
+    AllowedValues:
+      - PROVISIONED
+      - PAY_PER_REQUEST
+
+  TTLAttribute:
+    Description: "O nome do atributo para TTL"
+    Type: String
+    Default: "ttl"
+
+  GSI1IndexName:
+    Description: "O nome do primeiro Índice Secundário Global"
+    Type: String
+    Default: "default_gsi1_name"
+
+  GSI2IndexName:
+    Description: "O nome do segundo Índice Secundário Global"
+    Type: String
+    Default: "default_gsi2_name"
+
+Resources:
+  DynamoTable:
+    Type: 'AWS::DynamoDB::Table'
+    DeletionPolicy: "Retain"
+    Properties:
+      TableName: 
+        Ref: TableName
+      BillingMode: 
+        Ref: BillingMode
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+        - AttributeName: attr1
+          AttributeType: S
+        - AttributeName: attr2
+          AttributeType: S
+        - AttributeName: attr3
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: 
+          Ref: TTLAttribute
+        Enabled: true
+      GlobalSecondaryIndexes:
+        - IndexName: 
+            Ref: GSI1IndexName
+          KeySchema: 
+            - AttributeName: attr1
+              KeyType: HASH
+            - AttributeName: sk
+              KeyType: RANGE
+          Projection: 
+            ProjectionType: KEYS_ONLY
+        - IndexName: 
+            Ref: GSI2IndexName
+          KeySchema:
+            - AttributeName: attr2
+              KeyType: HASH
+            - AttributeName: attr3
+              KeyType: RANGE
+          Projection: 
+            NonKeyAttributes: 
+              - attr4
+              - attr5
+              - attr6
+              - attr7
+            ProjectionType: INCLUDE
+
+# Nota:
+# - Índices Secundários Globais (GSI) precisam ser excluídos e recriados para aplicar quaisquer alterações.

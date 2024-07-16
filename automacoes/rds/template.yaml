@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Timeout: 15
+    MemorySize: 128
+    Handler: app.lambda_handler
+    Runtime: python3.8
+    Architectures:
+      - x86_64
+
+Resources:
+  AutomationsTurnOffRds:
+      Type: AWS::Serverless::Function
+      Properties:
+        FunctionName: rds-turnoff
+        CodeUri: src/rds-turnoff/
+        Policies:
+          - Statement:
+              - Sid: RDSPolicy
+                Effect: Allow
+                Action:
+                  - rds:StopDBCluster
+                Resource: "*"
+        Events:
+          ScheduleWeek:
+            Type: Schedule
+            Properties:
+              Enabled: true
+              Schedule: "cron(0 2 ? * MON-SAT *)"
+          ScheduleWeekend:
+            Type: Schedule
+            Properties:
+              Enabled: true
+              Schedule: "cron(0 23 ? * SAT-SUN *)"
+
+  AutomationsTurnOnRds:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: rds-turnon
+      CodeUri: src/rds-turnon/
+      Policies:
+        - Statement:
+            - Sid: RDSPolicy
+              Effect: Allow
+              Action:
+                - rds:StartDBCluster
+              Resource: "*"
+      Events:
+        ScheduleWeek:
+          Type: Schedule
+          Properties:
+            Enabled: true
+            Schedule: "cron(0 9 ? * MON-FRI *)"
+        ScheduleWeekend:
+            Type: Schedule
+            Properties:
+              Enabled: true
+              Schedule: "cron(0 11 ? * SAT-SUN *)"
