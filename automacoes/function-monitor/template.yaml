@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Lambda para mandar custom metrics pro dynatrace'
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 512
+    Handler: main.lambda_handler
+    Runtime: python3.8
+
+Resources:
+  AutomationFunctionMonitor:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: automation-function-monitor
+      CodeUri: src
+      Policies:
+        - Statement:
+            - Sid: AllowCloudWatchLogs
+              Effect: Allow
+              Action:
+                - 'logs:CreateLogGroup'
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+            - Sid: AllowPutMetricData
+              Effect: Allow
+              Action:
+                - 'cloudwatch:PutMetricData'
+              Resource: '*'
+      Events:
+        Rule:
+          Type: EventBridgeRule
+          Properties:
+              Pattern:
+                source: ["aws.lambda"]
+                detail-type: ["AWS API Call via CloudTrail"]
+                detail:
+                  eventSource: ["lambda.amazonaws.com"]
+                  eventName: ["UpdateFunctionCode20150331v2"]
+              State: ENABLED
+              Target: !GetAtt AutomationFunctionMonitor.Arn

@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Lambda para mandar custom metrics pro dynatrace'
+
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 256
+    Handler: main.lambda_handler
+    Runtime: python3.8
+
+Resources:
+  AutomationBatchMonitor:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: automation-batch-monitor
+      CodeUri: src
+      Policies:
+        - Statement:
+            - Sid: AllowCloudWatchLogs
+              Effect: Allow
+              Action:
+                - 'logs:CreateLogGroup'
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+            - Sid: AllowPutMetricData
+              Effect: Allow
+              Action:
+                - 'cloudwatch:PutMetricData'
+              Resource: '*'
+      Events:
+        Rule:
+          Type: EventBridgeRule
+          Properties:
+              Pattern:
+                source: ["aws.batch"]
+                detail-type: ["Batch Job State Change"]
+                detail:
+                  status: ["RUNNING","SUCCEEDED","FAILED"]
+              State: ENABLED
+              Target: !GetAtt AutomationBatchMonitor.Arn

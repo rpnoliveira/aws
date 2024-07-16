@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Lambda para mandar custom metrics pro dynatrace'
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 512
+    Handler: main.lambda_handler
+    Runtime: python3.8
+
+
+Resources:
+
+  AutomationPlaPismoFile:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: automation-tabela-dynamo
+      CodeUri: src
+      Policies:
+        - Statement:
+            - Sid: AllowCloudWatchLogs
+              Effect: Allow
+              Action:
+                - 'logs:CreateLogGroup'
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource: '*'
+            - Sid: DynamoQuery
+              Effect: Allow
+              Action:
+                - 'dynamodb:Get*'
+                - 'dynamodb:List*'
+                - 'dynamodb:Query'
+                - 'dynamodb:Describe*'
+              Resource: 
+                - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/tabela-dynamo*'
+            - Sid: AllowPutMetricData
+              Effect: Allow
+              Action:
+                - 'cloudwatch:PutMetricData'
+              Resource: '*'
+      Events:
+        DynamoDBEvents:
+          Type: DynamoDB
+          Properties:
+            Stream: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/tabela-dynamo/stream/2024-04-01T18:20:43.631'
+            StartingPosition: LATEST
+            Enabled: true
+            BatchSize: 20
+            FilterCriteria:
+              Filters:
+                - Pattern: "{\"eventName\": [ \"MODIFY\" ] }"
