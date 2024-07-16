@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Template responsible for creating resources to apply retention on CloudWatch log groups.
+
+
+Globals:
+  Function:
+    Timeout: 15
+    MemorySize: 128
+    Handler: main.lambda_handler
+    Runtime: python3.8
+
+
+Resources:
+
+  RetainLogGroupsAutomation:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: retain-log-groups-automation
+      CodeUri: src
+      Policies:
+        - Statement:
+            - Sid: CloudWatchLogsPolicy
+              Effect: Allow
+              Action:
+                - logs:DescribeLogGroups
+                - logs:FilterLogEvents
+                - logs:PutRetentionPolicy
+              Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
+      Events:
+        Schedule:
+          Type: Schedule
+          Properties:
+            Enabled: true
+            Schedule: "cron(0 21 ? * FRI *)"
